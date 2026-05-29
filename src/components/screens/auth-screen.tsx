@@ -1,10 +1,31 @@
+import { useSignInWithGoogle } from "@clerk/expo/google";
 import { Image } from "expo-image";
-import { Text, useWindowDimensions, View } from "react-native";
+import { useState } from "react";
+import { Alert, Text, useWindowDimensions, View } from "react-native";
 
 import { AuthButton } from "@/components/features/auth/auth-button";
 
 export const AuthScreen = () => {
+  const [loading, setLoading] = useState(false);
+
+  const { startGoogleAuthenticationFlow } = useSignInWithGoogle();
   const { height } = useWindowDimensions();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      const { createdSessionId, setActive } = await startGoogleAuthenticationFlow();
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+      }
+    } catch (err: any) {
+      if (err.code === "SIGN_IN_CANCELLED" || err.code === "-5") return;
+      Alert.alert("Error", err.message || "An error occurred during Google sign-in");
+      console.error("Sign in with Google error:", JSON.stringify(err, null, 2));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-primary">
@@ -34,7 +55,7 @@ export const AuthScreen = () => {
           </Text>
         </View>
         <AuthButton provider="apple" />
-        <AuthButton provider="google" />
+        <AuthButton provider="google" onPress={handleGoogleSignIn} loading={loading} />
         <Text className="font-[Lato] text-xs text-foreground/50 text-center leading-5">
           By continuing, you agree to our Terms of Service and Privacy Policy.
         </Text>
