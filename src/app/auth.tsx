@@ -1,5 +1,5 @@
 import { AuthScreen } from "@/components/screens/auth-screen";
 
-export default function MainScreen() {
+export default function Auth() {
   return <AuthScreen />;
 }

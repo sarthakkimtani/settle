@@ -15,12 +15,12 @@ export default function AppLayout() {
   if (isLoading) return null;
 
   return (
-    <Stack>
+    <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" />
       </Stack.Protected>
       <Stack.Protected guard={isAuthenticated}>
-        <Stack.Screen name="groups" />
+        <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>
   );
