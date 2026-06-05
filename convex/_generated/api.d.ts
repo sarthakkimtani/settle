@@ -8,13 +8,25 @@
  * @module
  */
 
+import type * as groupMembers from "../groupMembers.js";
+import type * as groups from "../groups.js";
+import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as users from "../users.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  groupMembers: typeof groupMembers;
+  groups: typeof groups;
+  http: typeof http;
+  "lib/auth": typeof lib_auth;
+  users: typeof users;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.
