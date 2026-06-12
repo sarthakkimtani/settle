@@ -1,8 +1,8 @@
 import { ConvexError, v } from "convex/values";
 
-import { Id } from "@/_generated/dataModel";
-import { mutation, MutationCtx } from "@/_generated/server";
-import { getCurrentUser } from "@/lib/auth";
+import { Id } from "./_generated/dataModel";
+import { mutation, MutationCtx } from "./_generated/server";
+import { getCurrentUser } from "./lib/auth";
 
 const updateGroupMetadata = async (ctx: MutationCtx, groupId: Id<"groups">) => {
   const memberships = await ctx.db
@@ -42,16 +42,21 @@ export const addGroupMembers = mutation({
 
     const emails = [...new Set(args.memberEmails.map((e) => e.trim().toLowerCase()))];
 
-    const users = (
-      await Promise.all(
-        emails.map((email) =>
-          ctx.db
-            .query("users")
-            .withIndex("by_email", (q) => q.eq("email", email))
-            .unique(),
-        ),
-      )
-    ).filter((u): u is NonNullable<typeof u> => u !== null);
+    const resolvedMembers = await Promise.all(
+      emails.map(async (email) => ({
+        email,
+        user: await ctx.db
+          .query("users")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .unique(),
+      })),
+    );
+    const missingEmails = resolvedMembers
+      .filter(({ user }) => user === null)
+      .map(({ email }) => email);
+    const users = resolvedMembers
+      .map(({ user }) => user)
+      .filter((user): user is NonNullable<typeof user> => user !== null);
 
     for (const user of users) {
       const existing = await ctx.db
@@ -70,7 +75,7 @@ export const addGroupMembers = mutation({
     }
 
     await updateGroupMetadata(ctx, args.groupId);
-    return args.groupId;
+    return { groupId: args.groupId, missingEmails };
   },
 });
 

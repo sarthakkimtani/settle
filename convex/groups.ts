@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
-import { mutation, query } from "@/_generated/server";
-import { getCurrentUser } from "@/lib/auth";
+import { mutation, query } from "./_generated/server";
+import { getCurrentUser } from "./lib/auth";
 
 export const createGroup = mutation({
   args: {
@@ -16,7 +16,7 @@ export const createGroup = mutation({
     const groupId = await ctx.db.insert("groups", {
       name: args.name,
       description: args.description,
-      avatarUrls: [user.avatarUrl!],
+      avatarUrls: user.avatarUrl ? [user.avatarUrl] : [],
       memberCount: 1,
       createdBy: user._id,
       createdAt: now,
@@ -48,7 +48,7 @@ export const getGroups = query({
       memberships.map((membership) => ctx.db.get(membership.groupId)),
     );
 
-    return groups.filter(Boolean);
+    return groups.filter((group): group is NonNullable<typeof group> => group !== null);
   },
 });
 

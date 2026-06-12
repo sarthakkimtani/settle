@@ -1,6 +1,6 @@
 import { ConvexError } from "convex/values";
 
-import { QueryCtx } from "@/_generated/server";
+import { QueryCtx } from "../_generated/server";
 
 export const getCurrentUser = async (ctx: QueryCtx) => {
   const identity = await ctx.auth.getUserIdentity();

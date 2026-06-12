@@ -1,6 +1,7 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
-import { internalMutation } from "@/_generated/server";
+import { internalMutation, query } from "./_generated/server";
+import { getCurrentUser } from "./lib/auth";
 
 export const upsertFromClerk = internalMutation({
   args: {
@@ -22,6 +23,24 @@ export const upsertFromClerk = internalMutation({
     }
 
     await ctx.db.insert("users", args);
+  },
+});
+
+export const checkMemberEmailExists = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const currentUser = await getCurrentUser(ctx);
+    if (!currentUser) throw new ConvexError("User not found");
+
+    const email = args.email.trim().toLowerCase();
+    if (!email) return { exists: false };
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .unique();
+
+    return { exists: user !== null };
   },
 });
 

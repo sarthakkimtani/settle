@@ -15,7 +15,11 @@ export default function PrivateLayout() {
             {
               type: "custom",
               hidesSharedBackground: true,
-              element: <Text className="text-3xl font-bold font-[Inter]">Groups</Text>,
+              element: (
+                <Text className="font-[Inter] text-[30px] font-bold tracking-[-0.7px] text-foreground">
+                  Groups
+                </Text>
+              ),
             },
           ],
           unstable_headerRightItems: () => [
@@ -25,6 +29,13 @@ export default function PrivateLayout() {
               element: <UserAvatar />,
             },
           ],
+        }}
+      />
+      <Stack.Screen
+        name="groups/[id]"
+        options={{
+          headerTransparent: true,
+          headerTitle: "",
         }}
       />
     </Stack>
