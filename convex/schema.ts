@@ -14,6 +14,7 @@ export default defineSchema({
 
   groups: defineTable({
     name: v.string(),
+    currency: v.string(),
     description: v.optional(v.string()),
     avatarUrls: v.array(v.string()),
     memberCount: v.number(),
@@ -31,4 +32,15 @@ export default defineSchema({
     .index("by_group", ["groupId"])
     .index("by_user", ["userId"])
     .index("by_group_user", ["groupId", "userId"]),
+
+  expenses: defineTable({
+    groupId: v.id("groups"),
+    description: v.string(),
+    category: v.optional(v.string()),
+    amountMinor: v.number(),
+    paidByUserId: v.id("users"),
+    splitType: v.literal("equal"),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_group_created_at", ["groupId", "createdAt"]),
 });

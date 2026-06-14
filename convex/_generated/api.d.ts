@@ -8,10 +8,12 @@
  * @module
  */
 
+import type * as expenses from "../expenses.js";
 import type * as groupMembers from "../groupMembers.js";
 import type * as groups from "../groups.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_currency from "../lib/currency.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,10 +23,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  expenses: typeof expenses;
   groupMembers: typeof groupMembers;
   groups: typeof groups;
   http: typeof http;
   "lib/auth": typeof lib_auth;
+  "lib/currency": typeof lib_currency;
   users: typeof users;
 }>;
 

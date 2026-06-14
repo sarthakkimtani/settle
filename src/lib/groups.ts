@@ -1,12 +1,5 @@
-import type { Id } from "@/convex/_generated/dataModel";
-
-export type GroupListItem = {
-  _id: Id<"groups">;
-  name: string;
-  description?: string;
-  avatarUrls: string[];
-  memberCount: number;
-};
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { formatMoney } from "@/lib/currency";
 
 export type GroupMemberAvatar = {
   id: string;
@@ -15,16 +8,24 @@ export type GroupMemberAvatar = {
   backgroundColor?: string;
 };
 
+export type GroupBalanceTone = "positive" | "negative" | "neutral";
+
 export type GroupCardData = {
   id: Id<"groups">;
   name: string;
+  currency: string;
   members: GroupMemberAvatar[];
   balanceLabel: string;
   amount: string;
   tone: GroupBalanceTone;
 };
 
-export type GroupBalanceTone = "positive" | "negative" | "neutral";
+export type GroupMember = {
+  id: Id<"users">;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+};
 
 export type GroupCardProps = {
   group: GroupCardData;
@@ -36,6 +37,7 @@ export type GroupCardProps = {
 export type GroupAvatarStackProps = {
   members: GroupMemberAvatar[];
   maxVisible?: number;
+  size?: number;
 };
 
 export type GroupBalanceProps = {
@@ -50,6 +52,7 @@ export type GroupActionProps = {
 
 export type CreateGroupInput = {
   name: string;
+  currency: string;
   description?: string;
 };
 
@@ -69,30 +72,45 @@ export type CreateGroupSheetProps = {
   onCheckMemberEmail: (email: string) => Promise<boolean>;
 };
 
-export const mapGroupToCard = (group: GroupListItem): GroupCardData => {
-  const members =
-    group.avatarUrls.length > 0
-      ? group.avatarUrls.map((imageUri, index) => ({
-          id: `${group._id}-member-${index}`,
-          imageUri,
-        }))
-      : [
-          {
-            id: `${group._id}-fallback`,
-            initials: group.name.trim().charAt(0).toUpperCase() || "G",
-            backgroundColor: "#4EA085",
-          },
-        ];
+export const avatarsToStack = (
+  avatarUrls: string[],
+  fallbackName: string,
+  keyPrefix: string,
+): GroupMemberAvatar[] => {
+  if (avatarUrls.length > 0) {
+    return avatarUrls.map((imageUri, index) => ({
+      id: `${keyPrefix}-avatar-${index}`,
+      imageUri,
+    }));
+  }
 
-  return {
-    id: group._id,
-    name: group.name,
-    members,
-    balanceLabel: "You are owed",
-    amount: "$0",
-    tone: "neutral",
-  };
+  return [
+    {
+      id: `${keyPrefix}-fallback`,
+      initials: fallbackName.trim().charAt(0).toUpperCase() || "G",
+      backgroundColor: "#4EA085",
+    },
+  ];
 };
+
+export const membersToStack = (members: GroupMember[]): GroupMemberAvatar[] =>
+  members.map((member) => ({
+    id: member.id,
+    imageUri: member.avatarUrl,
+    initials: member.name.trim().charAt(0).toUpperCase() || "?",
+    backgroundColor: "#4EA085",
+  }));
+
+// Balances are zeroed for now: they will be computed server-side in a future update.
+export const mapGroupToCard = (group: Doc<"groups">): GroupCardData => ({
+  id: group._id,
+  name: group.name,
+  currency: group.currency,
+  members: avatarsToStack(group.avatarUrls, group.name, group._id),
+  balanceLabel: "You are owed",
+  amount: formatMoney(0, group.currency, { trimWhole: true }),
+  tone: "neutral",
+});
 
 export const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase());

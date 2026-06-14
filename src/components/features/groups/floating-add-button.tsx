@@ -1,12 +1,16 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable } from "react-native";
 
-import type { GroupActionProps } from "@/lib/groups";
-
-export const FloatingAddButton = ({ onPress }: GroupActionProps) => (
+export const FloatingAddButton = ({
+  onPress,
+  accessibilityLabel = "Add",
+}: {
+  onPress?: () => void;
+  accessibilityLabel?: string;
+}) => (
   <Pressable
     accessibilityRole="button"
-    accessibilityLabel="Create a group"
+    accessibilityLabel={accessibilityLabel}
     onPress={onPress}
     className="absolute bottom-7 left-1/2 h-[65px] w-[65px] items-center justify-center rounded-full bg-primary"
     style={({ pressed }) => [

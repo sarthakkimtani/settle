@@ -27,7 +27,6 @@ export const addGroupMembers = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await getCurrentUser(ctx);
-    if (!currentUser) throw new ConvexError("User not found");
 
     const adminMembership = await ctx.db
       .query("groupMembers")
@@ -86,7 +85,6 @@ export const removeGroupMembers = mutation({
   },
   handler: async (ctx, args) => {
     const currentUser = await getCurrentUser(ctx);
-    if (!currentUser) throw new ConvexError("User not found");
 
     const adminMembership = await ctx.db
       .query("groupMembers")

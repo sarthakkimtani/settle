@@ -1,20 +1,23 @@
 import { ConvexError, v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
-import { getCurrentUser } from "./lib/auth";
+import { getCurrentUser, requireGroupMembership } from "./lib/auth";
+import { isValidCurrency } from "./lib/currency";
 
 export const createGroup = mutation({
   args: {
     name: v.string(),
+    currency: v.string(),
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) throw new ConvexError("User not found");
+    if (!isValidCurrency(args.currency)) throw new ConvexError("Invalid currency");
 
     const now = Date.now();
     const groupId = await ctx.db.insert("groups", {
       name: args.name,
+      currency: args.currency,
       description: args.description,
       avatarUrls: user.avatarUrl ? [user.avatarUrl] : [],
       memberCount: 1,
@@ -37,7 +40,6 @@ export const createGroup = mutation({
 export const getGroups = query({
   handler: async (ctx, _) => {
     const user = await getCurrentUser(ctx);
-    if (!user) throw new ConvexError("User not found");
 
     const memberships = await ctx.db
       .query("groupMembers")
@@ -52,6 +54,42 @@ export const getGroups = query({
   },
 });
 
+export const getGroupDetails = query({
+  args: {
+    groupId: v.id("groups"),
+  },
+  handler: async (ctx, { groupId }) => {
+    const user = await getCurrentUser(ctx);
+    await requireGroupMembership(ctx, groupId, user._id);
+
+    const group = await ctx.db.get(groupId);
+    if (!group) throw new ConvexError("Group not found");
+
+    const memberships = await ctx.db
+      .query("groupMembers")
+      .withIndex("by_group", (q) => q.eq("groupId", groupId))
+      .collect();
+    const users = await Promise.all(memberships.map((item) => ctx.db.get(item.userId)));
+
+    return {
+      group,
+      currentUserId: user._id,
+      members: users.flatMap((member) =>
+        member
+          ? [
+              {
+                id: member._id,
+                name: `${member.firstName} ${member.lastName}`.trim(),
+                email: member.email,
+                avatarUrl: member.avatarUrl,
+              },
+            ]
+          : [],
+      ),
+    };
+  },
+});
+
 export const updateGroup = mutation({
   args: {
     groupId: v.id("groups"),
@@ -60,14 +98,9 @@ export const updateGroup = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
-    if (!user) throw new ConvexError("User not found");
 
-    const membership = await ctx.db
-      .query("groupMembers")
-      .withIndex("by_group_user", (q) => q.eq("groupId", args.groupId).eq("userId", user._id))
-      .unique();
-
-    if (!membership || membership.role !== "admin") {
+    const membership = await requireGroupMembership(ctx, args.groupId, user._id);
+    if (membership.role !== "admin") {
       throw new ConvexError("Only admins can update groups");
     }
 
@@ -85,8 +118,6 @@ export const deleteGroup = mutation({
   args: { groupId: v.id("groups") },
   handler: async (ctx, { groupId }) => {
     const user = await getCurrentUser(ctx);
-    if (!user) throw new ConvexError("User not found");
-
     const group = await ctx.db.get(groupId);
     if (!group) throw new ConvexError("Group not found");
 

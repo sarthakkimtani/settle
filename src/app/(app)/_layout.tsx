@@ -36,6 +36,8 @@ export default function PrivateLayout() {
         options={{
           headerTransparent: true,
           headerTitle: "",
+          headerBackTitle: "Groups",
+          headerTintColor: "#111827",
         }}
       />
     </Stack>

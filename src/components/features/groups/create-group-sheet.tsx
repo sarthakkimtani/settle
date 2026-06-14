@@ -14,6 +14,8 @@ import {
 } from "react-native";
 
 import type { Id } from "@/convex/_generated/dataModel";
+import { CurrencyPicker } from "@/components/features/groups/currency-picker";
+import { DEFAULT_CURRENCY_CODE } from "@/lib/currency";
 import type { CreateGroupSheetProps } from "@/lib/groups";
 import { isValidEmail } from "@/lib/groups";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ export const CreateGroupSheet = ({
   onCheckMemberEmail,
 }: CreateGroupSheetProps) => {
   const [name, setName] = useState("");
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY_CODE);
   const [description, setDescription] = useState("");
   const [email, setEmail] = useState("");
   const [memberEmails, setMemberEmails] = useState<string[]>([]);
@@ -81,6 +84,7 @@ export const CreateGroupSheet = ({
       setIsSubmitting(true);
       const groupId = await onCreateGroup({
         name: trimmedName,
+        currency,
         description: description.trim() || undefined,
       });
       setCreatedGroupId(groupId);
@@ -261,6 +265,14 @@ export const CreateGroupSheet = ({
                   placeholderTextColor="#9CA3AF"
                   returnKeyType="next"
                   className="rounded-2xl border border-border bg-background px-4 py-4 font-[Lato] text-base leading-0 text-foreground"
+                />
+              </View>
+              <View className="gap-2">
+                <Text className="font-[Lato] text-sm font-bold text-foreground/60">Currency</Text>
+                <CurrencyPicker
+                  selectedCode={currency}
+                  onSelect={setCurrency}
+                  disabled={isSubmitting}
                 />
               </View>
               <View className="gap-2">
