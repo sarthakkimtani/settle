@@ -1,26 +1,39 @@
+import type { ComponentProps } from "react";
+import type Ionicons from "@expo/vector-icons/Ionicons";
+
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { getCategory, type ExpenseCategory } from "@/lib/categories";
+import { getCategory } from "@/lib/categories";
 import { formatMoney } from "@/lib/currency";
 
 export type ExpenseWithPayer = Doc<"expenses"> & { paidBy: Doc<"users"> | null };
 
-export type ExpenseShareTone = "lent" | "borrowed" | "neutral";
-
-export type ExpenseRowData = {
-  id: Id<"expenses">;
-  description: string;
-  category: ExpenseCategory;
-  paidLabel: string;
-  shareLabel: string;
-  shareAmount: string;
-  tone: ExpenseShareTone;
-  createdAt: number;
+export type SettlementWithUsers = Doc<"settlements"> & {
+  fromUser: Doc<"users"> | null;
+  toUser: Doc<"users"> | null;
 };
 
-export type ExpenseSection = {
+export type ExpenseShareTone = "lent" | "borrowed" | "neutral";
+
+type IoniconName = ComponentProps<typeof Ionicons>["name"];
+
+/** One row in the dated activity list — either an expense or a settlement. */
+export type ActivityRowData = {
+  id: string;
+  createdAt: number;
+  icon: IoniconName;
+  iconColor: string;
+  iconBackground: string;
+  title: string;
+  subtitle: string;
+  rightLabel: string;
+  rightAmount: string;
+  tone: ExpenseShareTone;
+};
+
+export type ActivitySection = {
   key: string;
   title: string;
-  rows: ExpenseRowData[];
+  rows: ActivityRowData[];
 };
 
 export type ExpenseSortOrder = "latest" | "oldest";
@@ -34,7 +47,7 @@ export type ExpenseRowContext = {
 export const mapExpenseToRow = (
   expense: ExpenseWithPayer,
   context: ExpenseRowContext,
-): ExpenseRowData => {
+): ActivityRowData => {
   const isPayer = expense.paidByUserId === context.currentUserId;
   const payerName = isPayer ? "You" : expense.paidBy?.firstName.trim() || "Someone";
 
@@ -44,16 +57,42 @@ export const mapExpenseToRow = (
   const absMinor = Math.round(Math.abs(netMinor));
 
   const tone: ExpenseShareTone = absMinor === 0 ? "neutral" : netMinor > 0 ? "lent" : "borrowed";
+  const category = getCategory(expense.category);
 
   return {
     id: expense._id,
-    description: expense.description,
-    category: getCategory(expense.category),
-    paidLabel: `${payerName} paid ${formatMoney(expense.amountMinor, context.currency)}`,
-    shareLabel: tone === "lent" ? "you lent" : tone === "borrowed" ? "you borrowed" : "settled",
-    shareAmount: formatMoney(absMinor, context.currency),
-    tone,
     createdAt: expense.createdAt,
+    icon: category.icon,
+    iconColor: category.color,
+    iconBackground: category.backgroundColor,
+    title: expense.description,
+    subtitle: `${payerName} paid ${formatMoney(expense.amountMinor, context.currency)}`,
+    rightLabel: tone === "lent" ? "you lent" : tone === "borrowed" ? "you borrowed" : "settled",
+    rightAmount: formatMoney(absMinor, context.currency),
+    tone,
+  };
+};
+
+export const mapSettlementToRow = (
+  settlement: SettlementWithUsers,
+  context: Pick<ExpenseRowContext, "currentUserId" | "currency">,
+): ActivityRowData => {
+  const fromYou = settlement.fromUserId === context.currentUserId;
+  const toYou = settlement.toUserId === context.currentUserId;
+  const payerName = fromYou ? "You" : settlement.fromUser?.firstName.trim() || "Someone";
+  const payeeName = toYou ? "you" : settlement.toUser?.firstName.trim() || "someone";
+
+  return {
+    id: settlement._id,
+    createdAt: settlement.createdAt,
+    icon: "swap-horizontal",
+    iconColor: "#3E9479",
+    iconBackground: "#D8F1EC",
+    title: "Settle up",
+    subtitle: `${payerName} paid ${payeeName}`,
+    rightLabel: "settled",
+    rightAmount: formatMoney(settlement.amountMinor, context.currency),
+    tone: "neutral",
   };
 };
 
@@ -76,15 +115,15 @@ export const formatDayTitle = (timestamp: number, now = Date.now()): string => {
   return `${monthDay}, ${weekday}`;
 };
 
-export const buildExpenseSections = (
-  rows: ExpenseRowData[],
+export const buildActivitySections = (
+  rows: ActivityRowData[],
   order: ExpenseSortOrder,
-): ExpenseSection[] => {
+): ActivitySection[] => {
   const sorted = [...rows].sort((a, b) =>
     order === "latest" ? b.createdAt - a.createdAt : a.createdAt - b.createdAt,
   );
 
-  const sections: ExpenseSection[] = [];
+  const sections: ActivitySection[] = [];
   for (const row of sorted) {
     const key = String(startOfDay(row.createdAt));
     const last = sections[sections.length - 1];

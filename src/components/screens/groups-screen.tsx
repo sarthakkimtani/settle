@@ -12,7 +12,6 @@ import { GroupCard } from "@/components/features/groups/group-card";
 
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { DEFAULT_CURRENCY_CODE, formatMoney } from "@/lib/currency";
 import type { AddGroupMembersInput, CreateGroupInput, GroupCardData } from "@/lib/groups";
 import { mapGroupToCard } from "@/lib/groups";
 
@@ -29,9 +28,6 @@ export const GroupsScreen = () => {
   const [expenseGroupId, setExpenseGroupId] = useState<Id<"groups"> | null>(null);
 
   const groups = groupsResult?.map(mapGroupToCard) ?? [];
-
-  // Balances are zeroed for now: they will be computed server-side in a future update.
-  const overallLabel = `Overall, you are owed ${formatMoney(0, DEFAULT_CURRENCY_CODE, { trimWhole: true })}`;
 
   const handleOpenGroup = (groupId: Id<"groups">) => router.push(`/groups/${groupId}`);
 
@@ -104,10 +100,8 @@ export const GroupsScreen = () => {
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
-          contentContainerClassName="gap-3.5 px-5 pb-32"
+          contentContainerClassName="gap-3.5 px-5 pb-32 pt-2"
         >
-          <Text className="font-[Lato] text-[17px] leading-6 text-foreground">{overallLabel}</Text>
-
           {groups.map((group) => (
             <GroupCard
               key={group.id}

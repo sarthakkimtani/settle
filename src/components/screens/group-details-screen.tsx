@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 
 import { AddExpenseSheet } from "@/components/features/expenses/add-expense-sheet";
 import { ExpenseSections } from "@/components/features/expenses/expense-sections";
+import { SettleUpSheet } from "@/components/features/expenses/settle-up-sheet";
 import { EditGroupSheet } from "@/components/features/groups/edit-group-sheet";
 import { FloatingAddButton } from "@/components/features/groups/floating-add-button";
 import { GroupActionChips } from "@/components/features/groups/group-action-chips";
@@ -13,8 +14,13 @@ import { GroupAvatarStack } from "@/components/features/groups/group-avatar-stac
 
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { formatMoney } from "@/lib/currency";
-import { buildExpenseSections, mapExpenseToRow, type ExpenseSortOrder } from "@/lib/expenses";
+import { describeNetBalanceSentence } from "@/lib/balances";
+import {
+  buildActivitySections,
+  mapExpenseToRow,
+  mapSettlementToRow,
+  type ExpenseSortOrder,
+} from "@/lib/expenses";
 import { membersToStack } from "@/lib/groups";
 
 export const GroupDetailsScreen = () => {
@@ -23,12 +29,14 @@ export const GroupDetailsScreen = () => {
 
   const details = useQuery(api.groups.getGroupDetails, { groupId });
   const expenses = useQuery(api.expenses.listGroupExpenses, { groupId });
+  const settlements = useQuery(api.settlements.listGroupSettlements, { groupId });
 
   const [sortOrder, setSortOrder] = useState<ExpenseSortOrder>("latest");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isSettleUpOpen, setIsSettleUpOpen] = useState(false);
 
-  if (details === undefined || expenses === undefined) {
+  if (details === undefined || expenses === undefined || settlements === undefined) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
         <ActivityIndicator size="large" color="#4EA085" />
@@ -36,17 +44,18 @@ export const GroupDetailsScreen = () => {
     );
   }
 
-  const rows = expenses.map((expense) =>
-    mapExpenseToRow(expense, {
-      currentUserId: details.currentUserId,
-      memberCount: details.group.memberCount,
-      currency: details.group.currency,
-    }),
-  );
-  const sections = buildExpenseSections(rows, sortOrder);
+  const rowContext = {
+    currentUserId: details.currentUserId,
+    memberCount: details.group.memberCount,
+    currency: details.group.currency,
+  };
+  const rows = [
+    ...expenses.map((expense) => mapExpenseToRow(expense, rowContext)),
+    ...settlements.map((settlement) => mapSettlementToRow(settlement, rowContext)),
+  ];
+  const sections = buildActivitySections(rows, sortOrder);
 
-  // Balance is zeroed for now: it will be computed server-side in a future update.
-  const overallLabel = `You are owed ${formatMoney(0, details.group.currency, { trimWhole: true })} overall`;
+  const overallLabel = describeNetBalanceSentence(details.balanceMinor, details.group.currency);
 
   return (
     <View className="flex-1 bg-surface">
@@ -78,7 +87,10 @@ export const GroupDetailsScreen = () => {
 
         <Text className="font-[Lato] text-[16px] text-foreground">{overallLabel}</Text>
 
-        <GroupActionChips />
+        <GroupActionChips
+          onSettleUp={() => setIsSettleUpOpen(true)}
+          onCharts={() => router.push(`/groups/${groupId}/charts`)}
+        />
 
         {sections.length === 0 ? (
           <View className="items-center rounded-[24px] bg-card px-8 py-12">
@@ -108,6 +120,10 @@ export const GroupDetailsScreen = () => {
 
       {isAddExpenseOpen ? (
         <AddExpenseSheet groupId={groupId} onClose={() => setIsAddExpenseOpen(false)} />
+      ) : null}
+
+      {isSettleUpOpen ? (
+        <SettleUpSheet groupId={groupId} onClose={() => setIsSettleUpOpen(false)} />
       ) : null}
 
       {isEditOpen ? (

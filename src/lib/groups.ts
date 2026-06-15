@@ -1,5 +1,5 @@
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { formatMoney } from "@/lib/currency";
+import { describeNetBalance } from "@/lib/balances";
 
 export type GroupMemberAvatar = {
   id: string;
@@ -101,16 +101,20 @@ export const membersToStack = (members: GroupMember[]): GroupMemberAvatar[] =>
     backgroundColor: "#4EA085",
   }));
 
-// Balances are zeroed for now: they will be computed server-side in a future update.
-export const mapGroupToCard = (group: Doc<"groups">): GroupCardData => ({
-  id: group._id,
-  name: group.name,
-  currency: group.currency,
-  members: avatarsToStack(group.avatarUrls, group.name, group._id),
-  balanceLabel: "You are owed",
-  amount: formatMoney(0, group.currency, { trimWhole: true }),
-  tone: "neutral",
-});
+export type GroupWithBalance = Doc<"groups"> & { balanceMinor: number };
+
+export const mapGroupToCard = (group: GroupWithBalance): GroupCardData => {
+  const balance = describeNetBalance(group.balanceMinor, group.currency);
+  return {
+    id: group._id,
+    name: group.name,
+    currency: group.currency,
+    members: avatarsToStack(group.avatarUrls, group.name, group._id),
+    balanceLabel: balance.label,
+    amount: balance.amount,
+    tone: balance.tone,
+  };
+};
 
 export const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase());

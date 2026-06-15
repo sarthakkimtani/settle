@@ -13,7 +13,10 @@ import type * as groupMembers from "../groupMembers.js";
 import type * as groups from "../groups.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_balances from "../lib/balances.js";
 import type * as lib_currency from "../lib/currency.js";
+import type * as lib_groupData from "../lib/groupData.js";
+import type * as settlements from "../settlements.js";
 import type * as users from "../users.js";
 
 import type {
@@ -28,7 +31,10 @@ declare const fullApi: ApiFromModules<{
   groups: typeof groups;
   http: typeof http;
   "lib/auth": typeof lib_auth;
+  "lib/balances": typeof lib_balances;
   "lib/currency": typeof lib_currency;
+  "lib/groupData": typeof lib_groupData;
+  settlements: typeof settlements;
   users: typeof users;
 }>;
 

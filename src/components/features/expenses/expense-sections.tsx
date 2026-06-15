@@ -3,10 +3,10 @@ import { Fragment } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { ExpenseRow } from "@/components/features/expenses/expense-row";
-import type { ExpenseSection, ExpenseSortOrder } from "@/lib/expenses";
+import type { ActivitySection, ExpenseSortOrder } from "@/lib/expenses";
 
 type ExpenseSectionsProps = {
-  sections: ExpenseSection[];
+  sections: ActivitySection[];
   sortOrder: ExpenseSortOrder;
   onToggleSortOrder: () => void;
 };
@@ -43,7 +43,7 @@ export const ExpenseSections = ({
         {section.rows.map((row, rowIndex) => (
           <Fragment key={row.id}>
             {rowIndex > 0 ? <View className="ml-[72px] h-px bg-border/60" /> : null}
-            <ExpenseRow expense={row} />
+            <ExpenseRow row={row} />
           </Fragment>
         ))}
       </View>

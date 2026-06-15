@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getCurrentUser, requireGroupMembership } from "./lib/auth";
 import { isValidCurrency } from "./lib/currency";
+import { loadUserGroupBalance } from "./lib/groupData";
 
 export const createGroup = mutation({
   args: {
@@ -50,7 +51,14 @@ export const getGroups = query({
       memberships.map((membership) => ctx.db.get(membership.groupId)),
     );
 
-    return groups.filter((group): group is NonNullable<typeof group> => group !== null);
+    const present = groups.filter((group): group is NonNullable<typeof group> => group !== null);
+
+    return Promise.all(
+      present.map(async (group) => ({
+        ...group,
+        balanceMinor: await loadUserGroupBalance(ctx, group._id, user._id),
+      })),
+    );
   },
 });
 
@@ -70,10 +78,12 @@ export const getGroupDetails = query({
       .withIndex("by_group", (q) => q.eq("groupId", groupId))
       .collect();
     const users = await Promise.all(memberships.map((item) => ctx.db.get(item.userId)));
+    const balanceMinor = await loadUserGroupBalance(ctx, groupId, user._id);
 
     return {
       group,
       currentUserId: user._id,
+      balanceMinor,
       members: users.flatMap((member) =>
         member
           ? [

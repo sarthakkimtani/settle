@@ -43,4 +43,13 @@ export default defineSchema({
     createdByUserId: v.id("users"),
     createdAt: v.number(),
   }).index("by_group_created_at", ["groupId", "createdAt"]),
+
+  settlements: defineTable({
+    groupId: v.id("groups"),
+    fromUserId: v.id("users"),
+    toUserId: v.id("users"),
+    amountMinor: v.number(),
+    createdByUserId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_group_created_at", ["groupId", "createdAt"]),
 });

@@ -40,6 +40,15 @@ export default function PrivateLayout() {
           headerTintColor: "#111827",
         }}
       />
+      <Stack.Screen
+        name="groups/[id]/charts"
+        options={{
+          headerTransparent: true,
+          headerTitle: "Charts",
+          headerBackTitle: "Back",
+          headerTintColor: "#111827",
+        }}
+      />
     </Stack>
   );
 }
